@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>景点详情 - 长白山AR导览</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/data.js"></script>
+    <style>
+        body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+        .banner{height:220px;display:flex;align-items:center;justify-content:center;font-size:90px;}
+        .fade-in{animation:fadeIn .5s ease;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    </style>
+</head>
+<body class="bg-slate-100 pb-16">
+    <div id="app"></div>
+
+    <script>
+        const id = parseInt(new URLSearchParams(location.search).get("id")) || 1;
+        const spot = SPOTS.find(s => s.id === id);
+        const app = document.getElementById("app");
+
+        if (!spot) {
+            app.innerHTML = `<div class="text-center py-20 text-gray-500">景点不存在 <a href="./index.html" class="text-emerald-600">返回首页</a></div>`;
+        } else {
+            // 收藏状态（localStorage本地存储，无需后端）
+            const favKey = "cb_fav_" + spot.id;
+            const isFav = localStorage.getItem(favKey) === "1";
+
+            app.innerHTML = `
+                <div class="banner" style="background:${spot.color}22;color:${spot.color}">${spot.title.split(" ")[0]}</div>
+                <main class="max-w-3xl mx-auto px-4 -mt-10 relative fade-in">
+                    <div class="bg-white rounded-2xl shadow-lg p-6">
+                        <div class="flex items-center justify-between">
+                            <h1 class="text-2xl font-bold text-gray-800">${spot.name}</h1>
+                            <button id="favBtn"
+                                class="px-3 py-2 rounded-lg text-sm ${isFav ? 'bg-amber-500 text-white' : 'bg-slate-100 text-gray-600'}">
+                                ${isFav ? '❤️ 已收藏' : '🤍 收藏'}
+                            </button>
+                        </div>
+                        <p class="text-gray-600 mt-3 leading-relaxed">${spot.intro}</p>
+
+                        <div class="mt-5 bg-emerald-50 border border-emerald-200 rounded-xl p-4">
+                            <h3 class="font-bold text-emerald-800">📜 历史文化</h3>
+                            <p class="text-emerald-900 mt-2 text-sm leading-relaxed">${spot.history}</p>
+                        </div>
+
+                        <div class="mt-4 bg-sky-50 border border-sky-200 rounded-xl p-4">
+                            <h3 class="font-bold text-sky-800">🧭 游览小贴士</h3>
+                            <p class="text-sky-900 mt-2 text-sm">${spot.tips}</p>
+                        </div>
+
+                        <!-- 语音讲解 -->
+                        <div class="mt-6">
+                            <h3 class="font-bold text-gray-800 mb-2">🎧 语音讲解</h3>
+                            <audio id="player" controls class="w-full" src="${spot.audio}"></audio>
+                            <p class="text-xs text-gray-400 mt-1">${spot.audio}</p>
+                        </div>
+
+                        <div class="mt-6 flex gap-3">
+                            <a href="./ar.html" class="flex-1 text-center bg-emerald-600 text-white py-3 rounded-xl hover:bg-emerald-700 transition">📱 进入 AR 实景导览</a>
+                            <a href="./index.html" class="px-6 py-3 bg-slate-100 text-gray-700 rounded-xl hover:bg-slate-200 transition">返回</a>
+                        </div>
+                    </div>
+                </main>
+            `;
+
+            // 收藏按钮交互
+            document.getElementById("favBtn").addEventListener("click", function () {
+                const nowFav = localStorage.getItem(favKey) !== "1";
+                localStorage.setItem(favKey, nowFav ? "1" : "0");
+                this.textContent = nowFav ? "❤️ 已收藏" : "🤍 收藏";
+                this.className = "px-3 py-2 rounded-lg text-sm " + (nowFav ? "bg-amber-500 text-white" : "bg-slate-100 text-gray-600");
+                alert(nowFav ? "已收藏该景点" : "已取消收藏");
+            });
+        }
+    </script>
+</body>
+</html>

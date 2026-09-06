@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>长白山AR智慧旅游导览</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="./js/data.js"></script>
+    <style>
+        body{font-family:-apple-system,"PingFang SC","Microsoft YaHei",sans-serif;}
+        .hero{background:linear-gradient(135deg,#065f46 0%,#0d9488 60%,#0ea5e9 100%);}
+        .card-img{height:170px;display:flex;align-items:center;justify-content:center;font-size:60px;transition:transform .3s;}
+        .card:hover .card-img{transform:scale(1.05);}
+        .fade-in{animation:fadeIn .6s ease;}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+    </style>
+</head>
+<body class="bg-slate-100">
+    <!-- 顶部导航 -->
+    <nav class="bg-white shadow-sm">
+        <div class="max-w-5xl mx-auto px-4 py-3 flex items-center justify-between">
+            <div class="flex items-center gap-2 text-emerald-700 font-bold text-lg">
+                <span class="text-2xl">🏔️</span> 长白山AR导览
+            </div>
+            <div class="flex gap-2 text-sm">
+                <a href="#spots" class="px-3 py-1.5 rounded-lg hover:bg-emerald-50 text-emerald-700">景点</a>
+                <a href="#guide" class="px-3 py-1.5 rounded-lg hover:bg-emerald-50 text-emerald-700">使用说明</a>
+            </div>
+        </div>
+    </nav>
+
+    <!-- 主视觉Banner -->
+    <header class="hero text-white">
+        <div class="max-w-5xl mx-auto px-4 py-14 text-center">
+            <h1 class="text-4xl md:text-5xl font-bold">长白山 AR 智慧旅游导览系统</h1>
+            <p class="mt-4 text-lg opacity-90">拿起手机，对准标记图片，开启增强现实实景游览</p>
+            <a href="./ar.html"
+               class="mt-8 inline-block bg-white text-emerald-700 font-bold px-8 py-3 rounded-full shadow-lg hover:scale-105 transition">
+                📱 立即进入 AR 实景导览
+            </a>
+        </div>
+    </header>
+
+    <!-- 景点列表 -->
+    <main id="spots" class="max-w-5xl mx-auto px-4 py-10">
+        <h2 class="text-2xl font-bold text-gray-800 mb-6">🏞️ 精选景点</h2>
+        <section id="spotGrid" class="grid md:grid-cols-2 gap-6"></section>
+
+        <!-- 使用说明 -->
+        <div id="guide" class="mt-12 bg-white rounded-2xl shadow-md p-6 fade-in">
+            <h3 class="text-xl font-bold text-gray-800">📖 使用说明</h3>
+            <ul class="mt-4 space-y-3 text-gray-700 leading-relaxed">
+                <li class="flex gap-3"><span class="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm shrink-0">1</span>点击【进入AR实景导览】跳转AR页面</li>
+                <li class="flex gap-3"><span class="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm shrink-0">2</span>首次使用允许浏览器摄像头权限</li>
+                <li class="flex gap-3"><span class="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm shrink-0">3</span>将手机摄像头对准景区标记图片（打印图/电子屏）</li>
+                <li class="flex gap-3"><span class="w-6 h-6 bg-emerald-600 text-white rounded-full flex items-center justify-center text-sm shrink-0">4</span>识别成功后屏幕叠加3D模型与景点介绍，自动播放语音讲解</li>
+            </ul>
+            <p class="mt-5 text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg p-3">
+                ⚠️ AR功能需在 HTTPS 或 localhost 环境下运行，请使用 Live Server 启动，不要直接双击打开HTML文件。
+            </p>
+        </div>
+    </main>
+
+    <footer class="bg-gray-800 text-gray-300 text-center py-5 text-sm mt-8">
+        长白山AR智慧旅游导览系统 · 计算机科学与技术专业课程设计
+    </footer>
+
+    <script>
+        // 动态渲染景点卡片
+        const grid = document.getElementById("spotGrid");
+        SPOTS.forEach((s, i) => {
+            const card = document.createElement("div");
+            card.className = "bg-white rounded-2xl shadow-md overflow-hidden card fade-in";
+            card.style.animationDelay = (i * 0.1) + "s";
+            card.innerHTML = `
+                <div class="card-img" style="background:${s.color}22;color:${s.color}">${s.title.split(" ")[0]}</div>
+                <div class="p-5">
+                    <h3 class="text-xl font-bold text-gray-800">${s.name}</h3>
+                    <p class="text-gray-600 mt-2 text-sm leading-relaxed">${s.intro}</p>
+                    <div class="mt-4 flex gap-3 flex-wrap">
+                        <a href="./detail.html?id=${s.id}" class="bg-slate-100 text-gray-700 px-4 py-2 rounded-lg text-sm hover:bg-slate-200 transition">📖 查看详情</a>
+                        <a href="./ar.html" class="bg-emerald-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-emerald-700 transition">📱 AR导览</a>
+                    </div>
+                </div>`;
+            grid.appendChild(card);
+        });
+    </script>
+</body>
+</html>

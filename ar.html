@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AR实景导览 - 长白山</title>
+    <!-- 引入 A-Frame 与 AR.js（CDN，无需本地安装） -->
+    <script src="https://cdn.jsdelivr.net/npm/aframe@1.4.2/dist/aframe.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/ar.js@3.4.3/aframe/build/aframe-ar.js"></script>
+    <style>
+        * { margin:0; padding:0; box-sizing:border-box; }
+        html,body { height:100%; overflow:hidden; font-family:"PingFang SC","Microsoft YaHei",sans-serif; }
+        a-scene { position:absolute; inset:0; }
+
+        /* ===== AR 悬浮 UI ===== */
+        .btn {
+            position:absolute; z-index:999; border:none; cursor:pointer;
+            border-radius:10px; padding:9px 14px; font-size:14px; color:#fff;
+            box-shadow:0 2px 10px rgba(0,0,0,.25); transition:transform .15s;
+        }
+        .btn:active { transform:scale(.95); }
+        #backBtn { top:14px; left:14px; background:#374151; }
+        #shotBtn  { bottom:26px; right:16px; background:#0ea5e9; }
+
+        /* 识别成功的景点信息面板 */
+        #infoPanel {
+            position:absolute; top:56px; left:14px; z-index:999;
+            width:min(320px, 88vw); background:rgba(255,255,255,.92);
+            border-radius:14px; padding:16px; box-shadow:0 4px 18px rgba(0,0,0,.3);
+            display:none; max-height:52vh; overflow-y:auto;
+        }
+        #infoPanel h2 { font-size:18px; color:#065f46; margin-bottom:6px; }
+        #infoPanel p  { font-size:13px; line-height:1.7; color:#374151; }
+        #infoPanel .tag {
+            display:inline-block; margin-top:8px; background:#ecfdf5; color:#047857;
+            padding:3px 10px; border-radius:999px; font-size:12px;
+        }
+        #infoPanel audio { width:100%; margin-top:10px; }
+
+        /* 趣味小问答 */
+        #quiz {
+            position:absolute; bottom:26px; left:14px; z-index:999; display:none;
+            background:rgba(255,255,255,.95); border-radius:14px; padding:16px;
+            width:min(320px,88vw); box-shadow:0 4px 18px rgba(0,0,0,.3);
+        }
+        #quiz h4 { font-size:15px; color:#111; margin-bottom:10px; }
+        .opt {
+            display:block; width:100%; text-align:left; margin:6px 0;
+            padding:9px 12px; border-radius:8px; border:1px solid #e5e7eb;
+            background:#f9fafb; cursor:pointer; font-size:13px;
+        }
+        .opt:hover { background:#ecfdf5; border-color:#34d399; }
+        .opt.correct { background:#dcfce7; border-color:#22c55e; }
+        .opt.wrong   { background:#fee2e2; border-color:#ef4444; }
+
+        /* 识别提示 */
+        #hint {
+            position:absolute; top:50%; left:50%; transform:translate(-50%,-50%);
+            z-index:990; color:#fff; text-align:center; pointer-events:none;
+            text-shadow:0 1px 6px rgba(0,0,0,.5); font-size:15px; background:rgba(0,0,0,.35);
+            padding:14px 22px; border-radius:12px;
+        }
+    </style>
+</head>
+<body>
+    <!-- 返回按钮 -->
+    <button class="btn" id="backBtn" onclick="location.href='./index.html'">← 返回首页</button>
+    <!-- AR截图按钮 -->
+    <button class="btn" id="shotBtn" onclick="takeShot()">📷 AR截图</button>
+
+    <!-- 识别提示 -->
+    <div id="hint">请将摄像头对准<b>长白山天池</b>标记图片…</div>
+
+    <!-- 识别成功信息面板 -->
+    <div id="infoPanel">
+        <h2 id="pTitle">🏔️ 长白山天池</h2>
+        <p id="pIntro">长白山天池是火山喷发后积水形成的火山口湖，为我国最大的高山湖泊。</p>
+        <span class="tag">识别成功 · 实景叠加中</span>
+        <audio id="pAudio" controls></audio>
+    </div>
+
+    <!-- 趣味小问答 -->
+    <div id="quiz">
+        <h4>🧠 趣味问答：长白山天池最深处约多少米？</h4>
+        <button class="opt" data-correct="0">A. 约 100 米</button>
+        <button class="opt" data-correct="0">B. 约 200 米</button>
+        <button class="opt" data-correct="1">C. 约 373 米</button>
+        <button class="opt" data-correct="0">D. 约 500 米</button>
+        <p id="quizMsg" style="margin-top:8px;font-size:13px;color:#065f46;"></p>
+    </div>
+
+    <!-- ===== AR 场景 ===== -->
+    <a-scene embedded
+        arjs="trackingMethod:nft; sourceType:webcam; debugUIEnabled:false;"
+        renderer="logarithmicDepthBuffer:true;">
+
+        <!-- 长白山天池 NFT 标记 -->
+        <a-nft-marker id="marker-cb" url="./marker/tiandi">
+            <!-- 长白山3D模型（glb），scale 按模型实际大小调整 -->
+            <a-entity gltf-model="./models/mountain.glb" scale="0.4 0.4 0.4"></a-entity>
+            <!-- 若模型不显示，可取消下行注释，用方块验证识别 -->
+            <!-- <a-box color="#0ea5e9" scale="0.2 0.2 0.2"></a-box> -->
+        </a-nft-marker>
+    </a-scene>
+
+    <script>
+        const marker   = document.getElementById("marker-cb");
+        const panel    = document.getElementById("infoPanel");
+        const hint     = document.getElementById("hint");
+        const quiz     = document.getElementById("quiz");
+        const audio    = document.getElementById("pAudio");
+        let quizLock   = false;
+
+        // 从数据文件取天池景点
+        const spot = (typeof SPOTS !== "undefined") ? SPOTS.find(s => s.name === "长白山天池") : null;
+
+        if (spot) {
+            document.getElementById("pTitle").textContent = spot.title;
+            document.getElementById("pIntro").textContent = spot.intro + " " + spot.history;
+            audio.src = spot.audio;
+        }
+
+        // 识别到标记：显示面板、自动播放讲解、弹出问答
+        marker.addEventListener("markerFound", () => {
+            hint.style.display = "none";
+            panel.style.display = "block";
+            quiz.style.display  = "block";
+            audio.play().catch(()=>{ /* 浏览器自动播放限制，用户手动点播放 */ });
+            quizLock = false;
+            document.querySelectorAll(".opt").forEach(o=>{ o.disabled=false; o.classList.remove("correct","wrong"); });
+            document.getElementById("quizMsg").textContent = "";
+        });
+
+        // 标记离开画面：隐藏并停止
+        marker.addEventListener("markerLost", () => {
+            panel.style.display = "none";
+            quiz.style.display  = "none";
+            hint.style.display  = "block";
+            audio.pause();
+            audio.currentTime = 0;
+        });
+
+        // 趣味问答交互
+        document.querySelectorAll(".opt").forEach(btn => {
+            btn.addEventListener("click", () => {
+                if (quizLock) return;
+                quizLock = true;
+                const correct = btn.dataset.correct === "1";
+                document.querySelectorAll(".opt").forEach(o => o.disabled = true);
+                if (correct) {
+                    btn.classList.add("correct");
+                    document.getElementById("quizMsg").textContent = "🎉 回答正确！你真是长白山小百科~";
+                } else {
+                    btn.classList.add("wrong");
+                    document.querySelector('.opt[data-correct="1"]').classList.add("correct");
+                    document.getElementById("quizMsg").textContent = "😅 回答错误，正确答案是 C。再想想哦~";
+                }
+            });
+        });
+
+        // AR截图：用 A-Frame 内置截图组件保存当前 AR 画面
+        function takeShot() {
+            const scene = document.querySelector("a-scene");
+            try {
+                const canvas = scene.components.screenshot.getCanvas("perspective");
+                const a = document.createElement("a");
+                a.href = canvas.toDataURL("image/png");
+                a.download = "changbaishan-ar.png";
+                a.click();
+            } catch (e) {
+                alert("截图失败，请稍后重试");
+            }
+        }
+    </script>
+</body>
+</html>
